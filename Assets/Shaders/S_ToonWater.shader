@@ -8,6 +8,11 @@ Shader "Custom/S_ToonWater"
         _DepthMaxDistance("Depth Maximum Distance", Float) = 1
         _SurfaceNoiseCutoff("Surface Noise Cutoff", Range(0, 1)) = 0.777
         _FoamDistance("Foam Depth", float) = 1
+        _WaveDirection("Direction", Vector) = (0, 0.1, 0, 0)
+        _Speed("Big Wave Speed", float) = 1
+        _Frequency("Big Wave Frequency", float) = 1
+        _Amplitude("Big Wave Amplitude", float) = 1
+        _Offset("Height Offset", float) = 0.6
     }
     SubShader
     {
@@ -34,13 +39,20 @@ Shader "Custom/S_ToonWater"
             float4 _NoiseTex_ST;
             float _SurfaceNoiseCutoff;
             float _FoamDistance;
+            float2 _WaveDirection;
+
+            float _Speed;
+            float _Frequency;
+            float _Amplitude;
+            float _Offset;
+
 
             sampler2D _CameraDepthTexture;
 
             struct vertexInput
             {
                 float4 vertex : POSITION;
-                float4 texcoord: TEXCOORD0;
+                float4 normal : NORMAL;
                 float4 uv : TEXCOORD0;
             };
 
@@ -51,9 +63,17 @@ Shader "Custom/S_ToonWater"
                 float2 noiseUV : TEXCOORD0;
             };
 
+            float4 vertexAnimBigWave(float4 pos, float2 uv)
+            {
+                pos.y = pos.y + (sin((uv.x - _Time.y * _Speed) * _Frequency)/2 + _Offset) * _Amplitude;
+                return pos;
+            }
+
             vertexOutput vert (vertexInput v)
             {
                 vertexOutput o;
+                v.uv.xy += _Time.x * _WaveDirection;
+                v.vertex = vertexAnimBigWave(v.vertex, v.uv.xy);
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.screenPosition = ComputeScreenPos(o.vertex);
                 o.noiseUV.xy = (v.uv.xy * _NoiseTex_ST.xy + _NoiseTex_ST.zw);
@@ -71,8 +91,7 @@ Shader "Custom/S_ToonWater"
                 float waterDepthDifference01 = saturate(depthDifference / _DepthMaxDistance);
                 float4 waterColor = lerp(_ShallowColor, _DeepColor, waterDepthDifference01);
 
-                float foamDepthDifference01 = 1 - _FoamDistance;
-
+                float foamDepthDifference01 = saturate(depthDifference / _FoamDistance);
                 float surfaceNoiseCutoff = foamDepthDifference01 * _SurfaceNoiseCutoff;
                 float surfaceNoise = noise > surfaceNoiseCutoff  ? 1 : 0;
                 return waterColor + surfaceNoise;

@@ -1,19 +1,16 @@
-Shader "Custom/S_Flag"
+Shader "Custom/S_Tree"
 {
     Properties
     {
         _Color("Color", Color) = (1,0,0,1)
         _MainTex("Main Texture", 2D) = "white"{}
-        _Speed("Speed", float) = 1
-        _Frequency("Frequency", float) = 1
-        _Amplitude("Amplitude", float) = 1
     }
     SubShader
     {
         Tags 
         { 
             "Queue" = "Transparent"
-            "RenderType" = "Transparent"
+            "RenderType"="Opaque" 
             "IgnoreProjector" = "True" 
         }
         LOD 100
@@ -22,7 +19,6 @@ Shader "Custom/S_Flag"
 
         Pass
         {
-            Cull off
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
@@ -32,9 +28,6 @@ Shader "Custom/S_Flag"
             fixed4 _Color;
             uniform sampler2D _MainTex;
             uniform float4 _MainTex_ST;
-            uniform float _Speed;
-            uniform float _Frequency;
-            uniform float _Amplitude;
 
             struct vertexInput
             {
@@ -48,17 +41,9 @@ Shader "Custom/S_Flag"
                 float4 texcoord: TEXCOORD0;
             };
 
-            
-            float4 vertexAnimFlag(float4 pos, float2 uv)
-            {
-                pos.y = pos.y + uv.x * sin((uv.x - _Time.y * _Speed) * _Frequency) * _Amplitude;
-                return pos;
-            }
-
             vertexOutput vert (vertexInput v)
             {
                 vertexOutput o;
-                v.vertex = vertexAnimFlag(v.vertex, v.texcoord.xy);
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.texcoord.xy = (v.texcoord.xy * _MainTex_ST.xy + _MainTex_ST.zw);
                 return o;
